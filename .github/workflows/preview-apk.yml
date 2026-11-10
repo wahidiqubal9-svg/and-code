@@ -32,6 +32,8 @@ jobs:
               -dname "CN=AndCode Preview,O=AndCode,C=US"
           fi
       - name: Build debug APK
+        env:
+          GITHUB_CLIENT_ID: ${{ vars.AND_CODE_GITHUB_CLIENT_ID }}
         run: ./gradlew :app:assembleGithubDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4

@@ -1,6 +1,8 @@
 name: Preview APK
 
 on:
+  push:
+    branches: [preview-apk]
   workflow_dispatch:
 
 permissions:

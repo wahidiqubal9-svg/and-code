@@ -20,7 +20,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import com.yugahashimoto.andcode.R
 fun GuestBrowserScreen(
     initialUrl: String,
     onBack: () -> Unit,
+    agentControlEnabled: Boolean = false,
 ) {
     var urlInput by rememberSaveable { mutableStateOf(initialUrl) }
     var progress by remember { mutableIntStateOf(0) }
@@ -73,6 +76,12 @@ fun GuestBrowserScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (BrowserHandoff.active != null) {
+                GuestBrowserHandoffBanner(
+                    onHandBack = BrowserHandoff::handBack,
+                    onDismiss = BrowserHandoff::dismiss,
+                )
+            }
             if (!webViewUnavailable) {
                 GuestBrowserUrlBar(
                     urlInput = urlInput,
@@ -87,10 +96,9 @@ fun GuestBrowserScreen(
                 WebViewUnavailableNotice(modifier = Modifier.weight(1f).fillMaxWidth())
             } else {
                 GuestWebContent(
-                    // WebView can draw its background outside its measured bounds, covering the URL
-                    // field even while that field still accepts focus and keyboard input.
                     url = initialUrl,
                     modifier = Modifier.weight(1f).clipToBounds(),
+                    agentControlEnabled = agentControlEnabled,
                     onWebViewCreated = { webView = it },
                     onProgress = { progress = it },
                     onNavigationStateChange = { url, back, forward ->
@@ -115,6 +123,40 @@ private fun WebViewUnavailableNotice(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/**
+ * Shown while the agent has handed the page to the user. The page stays live underneath, so the
+ * user can sign in (or do any other step only they can do) and then give control back in one tap.
+ */
+@Composable
+internal fun GuestBrowserHandoffBanner(
+    onHandBack: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Surface(color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.guest_browser_handoff_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    text = stringResource(R.string.guest_browser_handoff_body),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.guest_browser_handoff_cancel))
+            }
+            Button(onClick = onHandBack, modifier = Modifier.padding(start = 8.dp)) {
+                Text(stringResource(R.string.guest_browser_handoff_done))
+            }
+        }
     }
 }
 

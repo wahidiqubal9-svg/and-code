@@ -81,6 +81,7 @@ import com.yugahashimoto.andcode.feature.assistant.SpeechTranscriptAccumulator
 import com.yugahashimoto.andcode.feature.assistant.VoiceDictationOutcome
 import com.yugahashimoto.andcode.feature.assistant.VoiceDictationPolicy
 import com.yugahashimoto.andcode.feature.browser.BrowserCommand
+import com.yugahashimoto.andcode.feature.browser.BrowserHandoff
 import com.yugahashimoto.andcode.feature.browser.GuestBrowserCommandWatcher
 import com.yugahashimoto.andcode.feature.browser.PreviewTarget
 import com.yugahashimoto.andcode.feature.browser.PreviewUiState
@@ -793,18 +794,26 @@ fun AndCodeApp(
         navController.navigate(ROUTE_CHAT) { launchSingleTop = true }
     }
 
-    // Lets the in-guest agent pop the guest browser open for the user by dropping a command
-    // file into the active workspace (see GuestBrowserCommandWatcher).
+    // Lets the in-guest agent open or preview the browser for the user, or hand it over and wait,
+    // by dropping a command file into the active workspace (see GuestBrowserCommandWatcher).
     GuestBrowserCommandWatcher(
         workspacePath = chatState.sessionDirectory ?: chatState.selectedWorkspacePath,
         agent = selectedRuntime?.agent,
         runtimeDirectory = java.io.File(context.filesDir, "runtime"),
         foreground = app.appForeground.foreground,
+        allowRemotePreview = { preferences.guestBrowserAgentControlEnabled },
         onCommand = { command ->
             when (command) {
                 is BrowserCommand.Open ->
                     navController.navigate(guestBrowserRoute(command.url)) { launchSingleTop = true }
                 is BrowserCommand.Preview -> showPreview(PreviewTarget.Url(command.url))
+                is BrowserCommand.Handoff -> {
+                    // The watcher has already recorded `awaiting_user`. A handoff never navigates:
+                    // `launchSingleTop` would reuse the same entry and the WebView only loads its
+                    // first URL, so a "navigate" here would be a no-op at best and a reload of the
+                    // sign-in the user just completed at worst.
+                    BrowserHandoff.begin(command.statusFile)
+                }
             }
         },
     )
@@ -1345,6 +1354,7 @@ fun AndCodeApp(
                             previewTargets = sessionPreviewTargets,
                             isForeground = appForeground,
                             previewWorkspaceDir = previewWorkspaceDir,
+                            agentControlEnabled = preferences.guestBrowserAgentControlEnabled,
                             onPreviewRequested = { target -> showPreview(target) },
                             onPreviewMinimize = {
                                 (previewState as? PreviewUiState.Active)?.let {

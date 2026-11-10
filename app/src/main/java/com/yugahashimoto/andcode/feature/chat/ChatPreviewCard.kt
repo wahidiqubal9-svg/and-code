@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yugahashimoto.andcode.R
+import com.yugahashimoto.andcode.feature.browser.BrowserHandoff
+import com.yugahashimoto.andcode.feature.browser.GuestBrowserHandoffBanner
 import com.yugahashimoto.andcode.feature.browser.GuestWebContent
 import com.yugahashimoto.andcode.feature.browser.PreviewTarget
 import com.yugahashimoto.andcode.feature.browser.StaticAssetInterceptor
@@ -68,6 +70,7 @@ fun ChatPreviewCard(
     onExpand: (PreviewTarget) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    agentControlEnabled: Boolean = false,
 ) {
     var fullscreen by remember(target) { mutableStateOf(false) }
     var webView by remember(target) { mutableStateOf<WebView?>(null) }
@@ -106,6 +109,7 @@ fun ChatPreviewCard(
                         onReload = { webView?.reload() },
                         onClose = onClose,
                     )
+                    PreviewHandoffBanner()
                     PreviewBody(
                         target = target,
                         modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
@@ -114,6 +118,7 @@ fun ChatPreviewCard(
                         onProgress = { progress = it },
                         onUnavailable = { unavailable = true },
                         onWebViewCreated = onCreated,
+                        agentControlEnabled = agentControlEnabled,
                     )
                 }
             }
@@ -137,6 +142,7 @@ fun ChatPreviewCard(
                     onReload = { webView?.reload() },
                     onClose = onClose,
                 )
+                PreviewHandoffBanner()
                 PreviewBody(
                     target = target,
                     modifier = Modifier.fillMaxWidth().height(280.dp).clipToBounds(),
@@ -145,9 +151,24 @@ fun ChatPreviewCard(
                     onProgress = { progress = it },
                     onUnavailable = { unavailable = true },
                     onWebViewCreated = onCreated,
+                    agentControlEnabled = agentControlEnabled,
                 )
             }
         }
+    }
+}
+
+/**
+ * Shows the same handoff controls as the full-screen guest browser, so the user can take over and
+ * hand back without leaving the conversation.
+ */
+@Composable
+private fun PreviewHandoffBanner() {
+    if (BrowserHandoff.active != null) {
+        GuestBrowserHandoffBanner(
+            onHandBack = BrowserHandoff::handBack,
+            onDismiss = BrowserHandoff::dismiss,
+        )
     }
 }
 
@@ -204,6 +225,7 @@ private fun PreviewBody(
     onProgress: (Int) -> Unit,
     onUnavailable: () -> Unit,
     onWebViewCreated: (WebView?) -> Unit,
+    agentControlEnabled: Boolean = false,
 ) {
     if (unavailable) {
         Text(
@@ -222,6 +244,7 @@ private fun PreviewBody(
             GuestWebContent(
                 url = target.url,
                 modifier = modifier,
+                agentControlEnabled = agentControlEnabled,
                 onWebViewCreated = onWebViewCreated,
                 onProgress = onProgress,
                 onUnavailable = { onUnavailable() },
@@ -231,6 +254,7 @@ private fun PreviewBody(
             GuestWebContent(
                 url = staticPreviewUrl(target.entry),
                 modifier = modifier,
+                agentControlEnabled = agentControlEnabled,
                 onWebViewCreated = onWebViewCreated,
                 interceptRequest = interceptor::intercept,
                 onProgress = onProgress,

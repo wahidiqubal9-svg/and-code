@@ -19,7 +19,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.yugahashimoto.andcode.BuildConfig
 
 private const val TAG = "GuestBrowser"
 
@@ -28,14 +27,17 @@ private const val TAG = "GuestBrowser"
  *
  * Shared by the full-screen guest browser and the conversation's inline preview. The view is
  * destroyed when it leaves the composition so a dismissed preview does not keep a rendering
- * surface alive. Agent-driven inspection over CDP is only enabled in debug builds, matching the
- * guest browser's existing behaviour.
+ * surface alive.
+ *
+ * [agentControlEnabled] is the user's explicit opt-in ("Let the agent control the Guest Browser"):
+ * only then does the WebView expose its devtools socket so the in-guest agent can drive it over
+ * CDP. That socket is a cross-process surface, so it stays closed by default in every build.
  */
 @Composable
 fun GuestWebContent(
     url: String,
     modifier: Modifier = Modifier,
-    enableDebugging: Boolean = BuildConfig.DEBUG,
+    agentControlEnabled: Boolean = false,
     onWebViewCreated: (WebView?) -> Unit = {},
     interceptRequest: ((Uri) -> WebResourceResponse?)? = null,
     onProgress: (Int) -> Unit = {},
@@ -57,10 +59,10 @@ fun GuestWebContent(
             val created =
                 viewOrNull(
                     create = {
-                        // Lets the in-guest agent drive this WebView over CDP (the devtools abstract
-                        // socket is reachable from the guest, which shares the app's UID), so a page
-                        // can be shown to the user and operated by human and agent at the same time.
-                        if (enableDebugging) WebView.setWebContentsDebuggingEnabled(true)
+                        // Lets the in-guest agent drive this WebView over CDP so a page can be shown
+                        // to and operated by human and agent at the same time. The devtools socket is
+                        // a cross-process surface, so it exists only after the user opts in.
+                        WebView.setWebContentsDebuggingEnabled(agentControlEnabled)
                         WebView(context)
                     },
                     onFailure = { error ->

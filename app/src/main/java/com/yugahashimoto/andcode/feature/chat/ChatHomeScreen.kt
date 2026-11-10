@@ -280,6 +280,8 @@ fun ChatHomeScreen(
     isForeground: Boolean = true,
     /** Host-side workspace directory watched for live reload; null on remote runtimes. */
     previewWorkspaceDir: File? = null,
+    /** The user's opt-in for the agent driving the browser; off means the preview is view-only. */
+    agentControlEnabled: Boolean = false,
     onPreviewRequested: (PreviewTarget) -> Unit = {},
     onPreviewMinimize: () -> Unit = {},
     onPreviewRestore: () -> Unit = {},
@@ -663,6 +665,7 @@ fun ChatHomeScreen(
                             onMinimize = onPreviewMinimize,
                             onExpand = onExpandPreview,
                             onClose = onClosePreview,
+                            agentControlEnabled = agentControlEnabled,
                             modifier = Modifier.padding(bottom = 6.dp),
                         )
                     }

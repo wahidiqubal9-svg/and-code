@@ -127,6 +127,46 @@ class BrowserCommandWatcherTest {
     }
 
     @Test
+    fun `preview commands allow a public page once the agent-control opt-in is on`() {
+        val file = command("workspace/project", "https://example.com/", action = "preview")
+
+        assertEquals(
+            BrowserCommand.Preview("https://example.com/"),
+            consume("/workspace/project", allowRemotePreview = true),
+        )
+        assertFalse(file.exists())
+    }
+
+    @Test
+    fun `public previews must be https even with the opt-in`() {
+        val file = command("workspace/project", "http://example.com/", action = "preview")
+
+        assertNull(consume("/workspace/project", allowRemotePreview = true))
+        assertTrue(file.exists())
+    }
+
+    @Test
+    fun `handoff waits on the current page and records that it is waiting`() {
+        val file = command("workspace/project", url = "", action = "handoff")
+
+        val command = consume("/workspace/project")
+
+        assertTrue(command is BrowserCommand.Handoff)
+        assertFalse(file.exists())
+        assertTrue((command as BrowserCommand.Handoff).statusFile.readText().contains(BROWSER_STATUS_AWAITING_USER))
+    }
+
+    @Test
+    fun `handoff never carries a url because it acts on the page already open`() {
+        listOf("https://example.com/login", "javascript:alert(1)").forEach { url ->
+            val file = command("workspace/project", url = url, action = "handoff")
+
+            assertNull(consume("/workspace/project"))
+            assertTrue(file.exists())
+        }
+    }
+
+    @Test
     fun `unsupported actions and invalid URLs do not open the browser`() {
         val file = command("workspace/project")
         listOf(
@@ -189,7 +229,8 @@ class BrowserCommandWatcherTest {
         path: String?,
         agent: LocalAgent? = LocalAgent.CODEX,
         mounts: DeviceStorage.Mounts = DeviceStorage.Mounts.None,
-    ): BrowserCommand? = consumeBrowserOpenCommand(path, agent, runtimeDirectory, mounts)
+        allowRemotePreview: Boolean = false,
+    ): BrowserCommand? = consumeBrowserCommand(path, agent, runtimeDirectory, mounts, allowRemotePreview)
 
     private fun command(
         relativeDirectory: String,

@@ -19,11 +19,18 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Restore stable debug signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: andcode-preview-debug-keystore-v1
+      - name: Ensure preview signing key
+        run: |
+          if [ ! -f preview-keystore.jks ]; then
+            keytool -genkeypair -v \
+              -storetype JKS \
+              -keystore preview-keystore.jks \
+              -storepass andcodepreview \
+              -keypass andcodepreview \
+              -alias andcodepreview \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=AndCode Preview,O=AndCode,C=US"
+          fi
       - name: Build debug APK
         run: ./gradlew :app:assembleGithubDebug
       - name: Upload APK
@@ -32,9 +39,9 @@ jobs:
           name: andcode-preview-debug
           path: app/build/outputs/apk/github/debug/app-github-debug.apk
           if-no-files-found: error
-      - name: Back up signing key
+      - name: Upload signing key
         uses: actions/upload-artifact@v4
         with:
           name: andcode-preview-keystore
-          path: ~/.android/debug.keystore
+          path: preview-keystore.jks
           if-no-files-found: error

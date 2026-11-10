@@ -133,9 +133,19 @@ android {
         applicationId = "com.yugahashimoto.andcode"
         minSdk = 26
         targetSdk = 35
-        versionCode = 68
-        versionName = "1.2.29"
+        versionCode =
+            (System.getenv("ANDCODE_VERSION_CODE") ?: findProperty("andcode.versionCode")?.toString() ?: "68")
+                .toInt()
+        versionName =
+            System.getenv("ANDCODE_VERSION_NAME") ?: findProperty("andcode.versionName")?.toString() ?: "1.2.29"
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"$githubClientId\"")
+        // The GitHub repository the in-app updater reads releases from. A fork build overrides it;
+        // the upstream default keeps this harmless if the change ever lands there.
+        buildConfigField(
+            "String",
+            "UPDATE_REPOSITORY",
+            "\"${System.getenv("ANDCODE_UPDATE_REPOSITORY") ?: "yuga-hashimoto/and-code"}\"",
+        )
 
         // The on-device runtime (see ANDROID_ABIS in scripts/prepare_android_runtime_native_libs.py)
         // only exists for these two ABIs. Without the filter JNA and Vosk drag in libraries for

@@ -1243,6 +1243,17 @@
     <string name="chat_preview_link">Preview</string>
     <string name="chat_preview_unavailable">The WebView on this device could not start, so the preview is unavailable.</string>
     <string name="chat_preview_minimize">Minimize preview</string>
+    <string name="app_update_row">Check for app updates</string>
+    <string name="app_update_checking">Checking…</string>
+    <string name="app_update_downloading">Downloading… %1$d%%</string>
+    <string name="app_update_up_to_date">You are on the latest version</string>
+    <string name="app_update_check_failed">Could not check for updates</string>
+    <string name="app_update_available_title">Update available</string>
+    <string name="app_update_available_body">Version %1$s is available. Download and install it now?</string>
+    <string name="app_update_install">Download &amp; install</string>
+    <string name="app_update_download_failed">The update could not be downloaded</string>
+    <string name="app_update_install_blocked">Allow installing apps from AndCode, then try again</string>
+    <string name="app_update_install_failed">Could not start the installer</string>
     <string name="setup_step_development_tools">Development tools</string>
     <string name="setup_development_tools_description">Install only the runtime by default, or include the complete development toolchain.</string>
     <string name="setup_required_tools_description">Linux, the selected agents, Git, and the support tools used by AndCode. These are always installed.</string>

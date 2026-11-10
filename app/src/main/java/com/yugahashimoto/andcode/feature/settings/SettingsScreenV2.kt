@@ -318,6 +318,8 @@ fun SettingsScreenV2(
                     onClick = onOpenLocalRuntime,
                 )
                 SettingsDivider()
+                AppUpdateRow()
+                SettingsDivider()
                 SettingsRow(
                     icon = Icons.Default.OpenInBrowser,
                     title = stringResource(R.string.guest_browser_row),

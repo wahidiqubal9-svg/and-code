@@ -409,7 +409,10 @@ fun AndCodeApp(
         previewState = PreviewUiState.Active(target)
     }
 
-    fun previewStatePayload(state: String, target: PreviewTarget): String {
+    fun previewStatePayload(
+        state: String,
+        target: PreviewTarget,
+    ): String {
         val json = org.json.JSONObject().put("state", state)
         when (target) {
             is PreviewTarget.Url -> json.put("kind", "url").put("url", target.url)

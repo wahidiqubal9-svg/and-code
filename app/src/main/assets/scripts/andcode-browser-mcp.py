@@ -25,6 +25,9 @@ from urllib.parse import urlparse
 
 COMMAND_FILE = Path(".and-code") / "browser-command.json"
 STATUS_FILE = Path(".and-code") / "browser-status.json"
+PREVIEW_STATE_FILE = Path(".and-code") / "preview-state.json"
+LAST_PREVIEW_FILE = Path(".and-code") / "browser-preview-target.json"
+TARGET_WAIT_SECONDS = 10.0
 
 
 def _find_devtools_socket() -> str | None:
@@ -169,11 +172,18 @@ class CdpSession:
             body = b"".join(chunks)
         return json.loads(body)
 
-    def open_page_session(self) -> "_PageSession":
+    def open_page_session(self, preferred_url: str | None = None) -> "_PageSession":
         targets = [t for t in self.list_targets() if t.get("type") in ("document", "page")]
         if not targets:
-            raise CdpError("no WebView page target found; is the guest browser open?")
-        ws_url = targets[0]["webSocketDebuggerUrl"]
+            raise CdpError(
+                "no WebView page target found. The page may still be opening; call "
+                "browser_status, or browser_preview/browser_show again."
+            )
+        selected = None
+        if preferred_url:
+            selected = next((t for t in targets if _same_page(t.get("url", ""), preferred_url)), None)
+        selected = selected or targets[0]
+        ws_url = selected["webSocketDebuggerUrl"]
         parsed = urlparse(ws_url)
         ws = _UnixWs(self._connect(), parsed.netloc or "localhost", parsed.path or "/")
         return _PageSession(ws)
@@ -239,16 +249,91 @@ def _require_web_url(url: str) -> str:
     return url
 
 
+def _read_json(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def _active_preview() -> dict:
+    """The preview the app says is on screen: active, collapsed, or none."""
+    return _read_json(PREVIEW_STATE_FILE)
+
+
+def _preferred_url(explicit: str | None = None) -> str | None:
+    if explicit:
+        return explicit
+    state = _active_preview()
+    if state.get("state") in ("active", "collapsed") and state.get("url"):
+        return state["url"]
+    last = _read_json(LAST_PREVIEW_FILE)
+    return last.get("url") or None
+
+
+def _same_page(target_url: str, preferred_url: str) -> bool:
+    """Same origin (scheme, host, port): paths change as the page navigates."""
+    try:
+        a = urlparse(target_url)
+        b = urlparse(preferred_url)
+    except ValueError:
+        return False
+    return (a.scheme, a.hostname, a.port) == (b.scheme, b.hostname, b.port)
+
+
+def _page_targets(name: str | None = None) -> list[dict]:
+    name = name or _find_devtools_socket()
+    if name is None:
+        return []
+    try:
+        targets = CdpSession(name).list_targets()
+    except (CdpError, OSError, ValueError):
+        return []
+    return [t for t in targets if t.get("type") in ("document", "page")]
+
+
+def _wait_for_page_target(preferred_url: str, timeout_s: float = TARGET_WAIT_SECONDS) -> bool:
+    """The app opens the WebView just after the command returns, so do not race it."""
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if any(_same_page(t.get("url", ""), preferred_url) for t in _page_targets()):
+            return True
+        time.sleep(0.25)
+    return False
+
+
+def _drive(args: dict) -> "_PageSession":
+    return _session().open_page_session(_preferred_url(args.get("match")))
+
+
 def tool_show(args: dict) -> str:
     url = _require_web_url(args["url"])
     _write_command({"action": "open", "url": url})
-    return f"requested the app to open {url}"
+    if _wait_for_page_target(url):
+        return f"opened {url} and it is ready to control"
+    return (
+        f"requested the app to open {url}; it is not visible yet. "
+        "Wait a moment and call browser_status before driving it."
+    )
 
 
 def tool_preview(args: dict) -> str:
     url = _require_web_url(args["url"])
     _write_command({"action": "preview", "url": url})
-    return f"requested the app to show {url} as an inline preview"
+    _write_json(LAST_PREVIEW_FILE, {"url": url})
+    if _wait_for_page_target(url):
+        return f"preview of {url} is open and ready to control"
+    return (
+        f"requested the in-chat preview of {url}; it is not visible yet. "
+        "Keep the app in the foreground, make sure the preview is not minimized, "
+        "then call browser_status."
+    )
 
 
 def tool_handoff(args: dict) -> str:
@@ -286,16 +371,25 @@ def tool_handoff(args: dict) -> str:
 
 
 def tool_status(args: dict) -> str:
+    preview = _active_preview()
     name = _find_devtools_socket()
     if name is None:
-        return "not connected: no WebView devtools socket. " + AGENT_CONTROL_HINT
-    pages = [t.get("url", "") for t in CdpSession(name).list_targets() if t.get("type") in ("document", "page")]
-    return f"connected: {name} / pages: {pages}"
+        return "not connected: no WebView devtools socket. " + AGENT_CONTROL_HINT + f" / preview: {preview or 'unknown'}"
+    pages = [t.get("url", "") for t in _page_targets(name)]
+    return f"connected: {name} / preview: {preview} / pages: {pages}"
+
+
+def tool_targets(args: dict) -> str:
+    pages = [
+        {"url": t.get("url", ""), "title": t.get("title", ""), "type": t.get("type", "")}
+        for t in _page_targets()
+    ]
+    return json.dumps({"preview": _active_preview(), "targets": pages}, indent=2)
 
 
 def tool_navigate(args: dict) -> str:
     url = _require_web_url(args["url"])
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         page.call("Page.navigate", url=url)
         return f"navigated to {url}"
@@ -336,7 +430,7 @@ def tool_upload(args: dict) -> str:
         raise CdpError("attaching is limited to device storage under /sdcard or /storage")
     selector = args.get("selector") or "input[type=file]"
     click_selector = args.get("click_selector")
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         try:
             page.call("Page.setInterceptFileChooserDialog", enabled=True)
@@ -371,7 +465,7 @@ def tool_upload(args: dict) -> str:
 
 
 def tool_click(args: dict) -> str:
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         expr = (
             "(() => { const el = document.elementFromPoint(%f, %f); "
@@ -385,7 +479,7 @@ def tool_click(args: dict) -> str:
 
 
 def tool_type(args: dict) -> str:
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         # Credentials are the user's to type: a password field means the agent should have handed
         # the page over instead of filling it in.
@@ -411,7 +505,7 @@ def tool_type(args: dict) -> str:
 
 def tool_screenshot(args: dict) -> str:
     save_path = args.get("save_path") or "/tmp/andcode-browser.png"
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         result = page.call("Page.captureScreenshot", format="png")
         target = Path(save_path)
@@ -423,7 +517,7 @@ def tool_screenshot(args: dict) -> str:
 
 
 def tool_info(args: dict) -> str:
-    page = _session().open_page_session()
+    page = _drive(args)
     try:
         result = page.call(
             "Runtime.evaluate",
@@ -440,8 +534,9 @@ TOOLS = [
         "name": "browser_show",
         "description": (
             "Open the AndCode in-app Guest Browser full-screen at the given URL so the user can "
-            "watch and operate the page. Use browser_preview instead when the page should stay "
-            "pinned inside the chat. Call this before other browser_* tools."
+            "watch and operate the page. Waits until the page is controllable, then "
+            "browser_navigate/click/type/screenshot can drive it. Use browser_preview instead when "
+            "the page should stay pinned inside the chat."
         ),
         "inputSchema": {
             "type": "object",
@@ -454,7 +549,8 @@ TOOLS = [
         "description": (
             "Show a page as a live, interactive preview pinned inside the AndCode chat. Loopback "
             "URLs (localhost / 127.0.0.1) are always allowed; a public https URL is allowed only "
-            "when the user has enabled 'Let the agent control the Guest Browser' in Settings."
+            "when the user has enabled 'Let the agent control the Guest Browser' in Settings. "
+            "Waits until the page is controllable, so the driving tools can be used straight after."
         ),
         "inputSchema": {
             "type": "object",
@@ -482,37 +578,65 @@ TOOLS = [
     },
     {
         "name": "browser_status",
-        "description": "Report CDP connectivity to the Guest Browser WebView and the current pages.",
+        "description": (
+            "Report CDP connectivity, the app's preview state (active/collapsed/none) and the "
+            "WebView pages that can be controlled."
+        ),
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "browser_targets",
+        "description": (
+            "List the controllable WebView pages with their URL and title, plus the preview state "
+            "the app reported. Use a page URL as the optional 'match' argument if several exist."
+        ),
         "inputSchema": {"type": "object", "properties": {}},
     },
     {
         "name": "browser_navigate",
-        "description": "Navigate the open Guest Browser to a URL.",
+        "description": (
+            "Navigate the previewed/guest page to a URL. Drives the active preview by default; "
+            "pass 'match' with a URL to choose a different WebView."
+        ),
         "inputSchema": {
             "type": "object",
-            "properties": {"url": {"type": "string"}},
+            "properties": {
+                "url": {"type": "string"},
+                "match": {"type": "string"},
+            },
             "required": ["url"],
         },
     },
     {
         "name": "browser_click",
-        "description": "Click/tap viewport coordinates (x, y) in the Guest Browser page.",
+        "description": (
+            "Click/tap viewport coordinates (x, y) in the previewed/guest page. Drives the active "
+            "preview by default; pass 'match' with a URL to choose a different WebView."
+        ),
         "inputSchema": {
             "type": "object",
-            "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+            "properties": {
+                "x": {"type": "number"},
+                "y": {"type": "number"},
+                "match": {"type": "string"},
+            },
             "required": ["x", "y"],
         },
     },
     {
         "name": "browser_type",
         "description": (
-            "Type text into the focused input of the Guest Browser page. Refuses a password field "
+            "Type text into the focused input of the previewed/guest page. Refuses a password field "
             "it can see (best effort: fields inside iframes or a shadow root are not inspected). "
-            "Use browser_handoff when credentials are needed."
+            "Use browser_handoff when credentials are needed. Drives the active preview by default; "
+            "pass 'match' with a URL to choose a different WebView."
         ),
         "inputSchema": {
             "type": "object",
-            "properties": {"text": {"type": "string"}},
+            "properties": {
+                "text": {"type": "string"},
+                "match": {"type": "string"},
+            },
             "required": ["text"],
         },
     },
@@ -522,7 +646,8 @@ TOOLS = [
             "Attach a file from device storage (/sdcard or /storage) to the page's file input, "
             "bypassing the Android file picker. Best effort: only an input reachable from "
             "document.querySelector is found; pass click_selector to open the site's upload button "
-            "when the input is created lazily."
+            "when the input is created lazily. Drives the active preview by default; pass 'match' "
+            "with a URL to choose a different WebView."
         ),
         "inputSchema": {
             "type": "object",
@@ -539,22 +664,35 @@ TOOLS = [
                     "type": "string",
                     "description": "Optional CSS selector for the button that reveals the file input.",
                 },
+                "match": {"type": "string"},
             },
             "required": ["path"],
         },
     },
     {
         "name": "browser_screenshot",
-        "description": "Capture the Guest Browser page as PNG and return the saved path.",
+        "description": (
+            "Capture the previewed/guest page as PNG and return the saved path. Drives the active "
+            "preview by default; pass 'match' with a URL to choose a different WebView."
+        ),
         "inputSchema": {
             "type": "object",
-            "properties": {"save_path": {"type": "string"}},
+            "properties": {
+                "save_path": {"type": "string"},
+                "match": {"type": "string"},
+            },
         },
     },
     {
         "name": "browser_info",
-        "description": "Return the current URL and title of the Guest Browser page.",
-        "inputSchema": {"type": "object", "properties": {}},
+        "description": (
+            "Return the current URL and title of the previewed/guest page. Pass 'match' with a URL "
+            "to choose a different WebView."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"match": {"type": "string"}},
+        },
     },
 ]
 
@@ -563,6 +701,7 @@ HANDLERS = {
     "browser_preview": tool_preview,
     "browser_handoff": tool_handoff,
     "browser_status": tool_status,
+    "browser_targets": tool_targets,
     "browser_navigate": tool_navigate,
     "browser_click": tool_click,
     "browser_type": tool_type,

@@ -167,6 +167,16 @@ android {
 
     if (hasReleaseSigning) {
         signingConfigs {
+            getByName("debug") {
+                val previewKeystore = rootProject.file("preview-keystore.jks")
+                if (previewKeystore.isFile) {
+                    storeFile = previewKeystore
+                    storePassword = "andcodepreview"
+                    keyAlias = "andcodepreview"
+                    keyPassword = "andcodepreview"
+                    storeType = "JKS"
+                }
+            }
             create("release") {
                 val storeFilePath = releaseStoreFile!!
                 storeFile =

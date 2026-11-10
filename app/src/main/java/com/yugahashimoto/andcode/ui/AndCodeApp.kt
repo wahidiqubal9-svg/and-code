@@ -86,6 +86,7 @@ import com.yugahashimoto.andcode.feature.browser.PreviewTarget
 import com.yugahashimoto.andcode.feature.browser.PreviewUiState
 import com.yugahashimoto.andcode.feature.browser.activeWorkspaceHostDirectory
 import com.yugahashimoto.andcode.feature.browser.findPreviewEntry
+import com.yugahashimoto.andcode.feature.browser.staticPreviewUrl
 import com.yugahashimoto.andcode.feature.chat.ChatHomeScreen
 import com.yugahashimoto.andcode.feature.chat.ChatViewModel
 import com.yugahashimoto.andcode.feature.chat.SubagentInfo
@@ -405,6 +406,37 @@ fun AndCodeApp(
     fun showPreview(target: PreviewTarget) {
         lastPreviewTarget = target
         previewState = PreviewUiState.Active(target)
+    }
+
+    fun previewStatePayload(state: String, target: PreviewTarget): String {
+        val json = org.json.JSONObject().put("state", state)
+        when (target) {
+            is PreviewTarget.Url -> json.put("kind", "url").put("url", target.url)
+            is PreviewTarget.Static ->
+                json
+                    .put("kind", "static")
+                    .put("url", staticPreviewUrl(target.entry))
+                    .put("entry", target.entry)
+        }
+        return json.toString()
+    }
+
+    // Publish the preview state for the guest browser MCP tools, so they target the exact WebView
+    // and wait for it instead of guessing at the first page in the app process.
+    LaunchedEffect(previewState, previewWorkspaceDir) {
+        val directory = previewWorkspaceDir ?: return@LaunchedEffect
+        val payload =
+            when (val state = previewState) {
+                is PreviewUiState.Active -> previewStatePayload("active", state.target)
+                is PreviewUiState.Collapsed -> previewStatePayload("collapsed", state.target)
+                PreviewUiState.None -> """{"state":"none"}"""
+            }
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val andCode = java.io.File(directory, ".and-code").apply { mkdirs() }
+                java.io.File(andCode, "preview-state.json").writeText(payload)
+            }
+        }
     }
 
     val speechManager = remember { SpeechRecognizerManager(context.applicationContext) }

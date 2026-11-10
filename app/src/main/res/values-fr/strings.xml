@@ -1224,6 +1224,17 @@
     <string name="chat_preview_link">Aperçu</string>
     <string name="chat_preview_unavailable">Le WebView de cet appareil n\'a pas pu démarrer, l\'aperçu est donc indisponible.</string>
     <string name="chat_preview_minimize">Réduire l\'aperçu</string>
+    <string name="app_update_row">Rechercher des mises à jour de l’application</string>
+    <string name="app_update_checking">Vérification…</string>
+    <string name="app_update_downloading">Téléchargement… %1$d%%</string>
+    <string name="app_update_up_to_date">Vous avez la dernière version</string>
+    <string name="app_update_check_failed">Impossible de rechercher des mises à jour</string>
+    <string name="app_update_available_title">Mise à jour disponible</string>
+    <string name="app_update_available_body">La version %1$s est disponible. La télécharger et l’installer maintenant ?</string>
+    <string name="app_update_install">Télécharger et installer</string>
+    <string name="app_update_download_failed">La mise à jour n’a pas pu être téléchargée</string>
+    <string name="app_update_install_blocked">Autorisez l’installation d’applications depuis AndCode, puis réessayez</string>
+    <string name="app_update_install_failed">Impossible de lancer l’installateur</string>
     <string name="setup_step_development_tools">Outils de développement</string>
     <string name="setup_development_tools_description">Installe uniquement le nécessaire par défaut, ou incluez la chaîne complète d’outils.</string>
     <string name="setup_required_tools_description">Linux, les agents sélectionnés, Git et les outils requis par AndCode. Ils sont toujours installés.</string>

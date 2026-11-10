@@ -1227,6 +1227,17 @@
     <string name="chat_preview_link">Просмотр</string>
     <string name="chat_preview_unavailable">WebView на этом устройстве не удалось запустить, поэтому просмотр недоступен.</string>
     <string name="chat_preview_minimize">Свернуть просмотр</string>
+    <string name="app_update_row">Проверить обновления приложения</string>
+    <string name="app_update_checking">Проверка…</string>
+    <string name="app_update_downloading">Загрузка… %1$d%%</string>
+    <string name="app_update_up_to_date">У вас последняя версия</string>
+    <string name="app_update_check_failed">Не удалось проверить обновления</string>
+    <string name="app_update_available_title">Доступно обновление</string>
+    <string name="app_update_available_body">Доступна версия %1$s. Скачать и установить сейчас?</string>
+    <string name="app_update_install">Скачать и установить</string>
+    <string name="app_update_download_failed">Не удалось загрузить обновление</string>
+    <string name="app_update_install_blocked">Разрешите установку приложений из AndCode и повторите попытку</string>
+    <string name="app_update_install_failed">Не удалось запустить установщик</string>
     <string name="setup_step_development_tools">Инструменты разработки</string>
     <string name="setup_development_tools_description">По умолчанию устанавливаются только необходимые компоненты. При желании можно добавить полный набор инструментов.</string>
     <string name="setup_required_tools_description">Linux, выбранные агенты, Git и вспомогательные инструменты AndCode. Они устанавливаются всегда.</string>

@@ -1218,6 +1218,17 @@
     <string name="chat_preview_link">预览</string>
     <string name="chat_preview_unavailable">此设备的 WebView 无法启动，因此预览不可用。</string>
     <string name="chat_preview_minimize">最小化预览</string>
+    <string name="app_update_row">检查应用更新</string>
+    <string name="app_update_checking">正在检查…</string>
+    <string name="app_update_downloading">正在下载… %1$d%%</string>
+    <string name="app_update_up_to_date">已是最新版本</string>
+    <string name="app_update_check_failed">无法检查更新</string>
+    <string name="app_update_available_title">有可用更新</string>
+    <string name="app_update_available_body">版本 %1$s 可用。现在下载并安装吗？</string>
+    <string name="app_update_install">下载并安装</string>
+    <string name="app_update_download_failed">无法下载更新</string>
+    <string name="app_update_install_blocked">请允许从 AndCode 安装应用，然后重试</string>
+    <string name="app_update_install_failed">无法启动安装程序</string>
     <string name="setup_step_development_tools">开发工具</string>
     <string name="setup_development_tools_description">默认只安装运行所需组件，也可以一并安装完整开发工具链。</string>
     <string name="setup_required_tools_description">Linux、所选智能体、Git 以及 AndCode 功能依赖的支持工具，将始终安装。</string>

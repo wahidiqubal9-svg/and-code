@@ -1224,6 +1224,17 @@
     <string name="chat_preview_link">Vista previa</string>
     <string name="chat_preview_unavailable">El WebView de este dispositivo no pudo iniciarse, así que la vista previa no está disponible.</string>
     <string name="chat_preview_minimize">Minimizar la vista previa</string>
+    <string name="app_update_row">Buscar actualizaciones de la aplicación</string>
+    <string name="app_update_checking">Comprobando…</string>
+    <string name="app_update_downloading">Descargando… %1$d%%</string>
+    <string name="app_update_up_to_date">Tienes la última versión</string>
+    <string name="app_update_check_failed">No se pudieron buscar actualizaciones</string>
+    <string name="app_update_available_title">Actualización disponible</string>
+    <string name="app_update_available_body">La versión %1$s está disponible. ¿Descargarla e instalarla ahora?</string>
+    <string name="app_update_install">Descargar e instalar</string>
+    <string name="app_update_download_failed">No se pudo descargar la actualización</string>
+    <string name="app_update_install_blocked">Permite instalar aplicaciones desde AndCode y vuelve a intentarlo</string>
+    <string name="app_update_install_failed">No se pudo iniciar el instalador</string>
     <string name="setup_step_development_tools">Herramientas de desarrollo</string>
     <string name="setup_development_tools_description">De forma predeterminada solo se instala lo necesario para ejecutar el entorno, o puedes incluir toda la cadena de desarrollo.</string>
     <string name="setup_required_tools_description">Linux, los agentes seleccionados, Git y las herramientas de soporte que usa AndCode. Siempre se instalan.</string>

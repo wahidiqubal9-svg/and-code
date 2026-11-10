@@ -1233,6 +1233,17 @@
     <string name="chat_preview_link">معاينة</string>
     <string name="chat_preview_unavailable">تعذر بدء WebView على هذا الجهاز، لذا المعاينة غير متاحة.</string>
     <string name="chat_preview_minimize">تصغير المعاينة</string>
+    <string name="app_update_row">التحقق من تحديثات التطبيق</string>
+    <string name="app_update_checking">جارٍ التحقق…</string>
+    <string name="app_update_downloading">جارٍ التنزيل… %1$d%%</string>
+    <string name="app_update_up_to_date">أنت تستخدم أحدث إصدار</string>
+    <string name="app_update_check_failed">تعذّر التحقق من التحديثات</string>
+    <string name="app_update_available_title">يتوفر تحديث</string>
+    <string name="app_update_available_body">الإصدار %1$s متاح. هل تريد تنزيله وتثبيته الآن؟</string>
+    <string name="app_update_install">تنزيل وتثبيت</string>
+    <string name="app_update_download_failed">تعذّر تنزيل التحديث</string>
+    <string name="app_update_install_blocked">اسمح بتثبيت التطبيقات من AndCode ثم حاول مرة أخرى</string>
+    <string name="app_update_install_failed">تعذّر بدء المثبّت</string>
     <string name="setup_step_development_tools">أدوات التطوير</string>
     <string name="setup_development_tools_description">يتم تثبيت مكونات التشغيل الضرورية فقط افتراضيًا، ويمكنك إضافة مجموعة أدوات التطوير الكاملة.</string>
     <string name="setup_required_tools_description">سيتم دائمًا تثبيت Linux والوكلاء المحددين وGit وأدوات الدعم التي يستخدمها AndCode.</string>

@@ -1238,6 +1238,17 @@
     <string name="chat_preview_link">プレビュー</string>
     <string name="chat_preview_unavailable">このデバイスのWebViewを起動できなかったため、プレビューを利用できません。</string>
     <string name="chat_preview_minimize">プレビューを最小化</string>
+    <string name="app_update_row">アプリの更新を確認</string>
+    <string name="app_update_checking">確認中…</string>
+    <string name="app_update_downloading">ダウンロード中… %1$d%%</string>
+    <string name="app_update_up_to_date">最新バージョンです</string>
+    <string name="app_update_check_failed">更新を確認できませんでした</string>
+    <string name="app_update_available_title">更新があります</string>
+    <string name="app_update_available_body">バージョン %1$s が利用可能です。今すぐダウンロードしてインストールしますか？</string>
+    <string name="app_update_install">ダウンロードしてインストール</string>
+    <string name="app_update_download_failed">更新をダウンロードできませんでした</string>
+    <string name="app_update_install_blocked">AndCode からのアプリインストールを許可してから、もう一度お試しください</string>
+    <string name="app_update_install_failed">インストーラーを起動できませんでした</string>
     <string name="setup_step_development_tools">開発ツール</string>
     <string name="setup_development_tools_description">既定では実行に必要なものだけをインストールします。完全な開発ツールチェーンも選択できます。</string>
     <string name="setup_required_tools_description">Linux、選択したエージェント、Git、および AndCode が使用するサポートツールです。これらは常にインストールされます。</string>
